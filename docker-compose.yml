@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres-zabbix
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zbx-backend
+
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:ubuntu-7.0-latest
+    container_name: zabbix-server
+    restart: unless-stopped
+    environment:
+      DB_SERVER_HOST: postgres
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - postgres
+    networks:
+      - zbx-backend
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:ubuntu-7.0-latest
+    container_name: zabbix-web
+    restart: unless-stopped
+    environment:
+      DB_SERVER_HOST: postgres
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      ZBX_SERVER_HOST: zabbix-server
+    ports:
+      - "8080:8080"
+    depends_on:
+      - zabbix-server
+    networks:
+      - zbx-backend
+      - zbx-frontend
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: zabbix-ngrok
+    restart: unless-stopped
+    volumes:
+      - ./ngrok.yml:/etc/ngrok.yml:ro
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_TOKEN}
+    command: "start --config /etc/ngrok.yml --all --log stdout"
+    depends_on:
+      - zabbix-web
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - zbx-frontend
+
+volumes:
+    postgres_data:
+
+networks:
+    zbx-backend:
+      external: true
+    zbx-frontend:
+      external: true

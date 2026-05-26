@@ -1,0 +1,6 @@
+# Secrets
+.env
+
+#Local data files and backups
+*.log
+postgres_data/

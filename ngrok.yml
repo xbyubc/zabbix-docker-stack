@@ -1,0 +1,9 @@
+version: 2
+tunnels:
+  zabbix-http:
+    proto: http
+    addr: zabbix-web:8080
+    host_header: rewrite
+  ssh-access:
+    proto: tcp
+    addr: host.docker.internal:22
